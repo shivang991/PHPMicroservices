@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* fonts */
+@font-face {
+    font-family: "Roboto";
+    src: url(./assets/fonts/Roboto.ttf);
+}
+
+@font-face {
+    font-family: "Playfair";
+    src: url(./assets/fonts/Playfair.ttf);
+}
+
+@font-face {
+    font-family: "Bitcount";
+    src: url(./assets/fonts/Bitcount.ttf);
+}
+
+@theme {
+    --font-sans: "Roboto", sans-serif;
+    --font-serif: "Playfair", serif, "Bitcount";
+    --font-mono: "Bitcount", monospace;
+}
