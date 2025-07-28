@@ -1,9 +1,29 @@
 services:
+  # php-fpm:
+  #   image: php:8.3-fpm
+  #   container_name: fpm
+  #   networks:
+  #     - fpm_net
+  #   ports:
+  #     - 9000:9000
+
+  proxy:
+    build:
+      context: nginx
+    ports:
+      - 80:80
+    networks:
+      - fpm_net
+
+    depends_on:
+      - server
+
   server:
+    container_name: php_server
     build:
       context: .
     ports:
-      - 9000:80
+      - 9000:9000
 
     depends_on:
       db:
@@ -16,6 +36,8 @@ services:
       - DB_HOST=db
       - DB_NAME=example
       - DB_USER=root
+    networks:
+      - fpm_net
 
   db:
     image: mariadb
@@ -47,3 +69,5 @@ volumes:
 secrets:
   db-password:
     file: db/password.txt
+networks:
+  fpm_net:
