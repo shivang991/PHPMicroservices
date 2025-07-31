@@ -1,54 +1,14 @@
 services:
-  # php-fpm:
-  #   image: php:8.3-fpm
-  #   container_name: fpm
-  #   networks:
-  #     - fpm_net
-  #   ports:
-  #     - 9000:9000
-
-  proxy:
-    build:
-      context: nginx
-    ports:
-      - 80:80
-    networks:
-      - fpm_net
-
-    depends_on:
-      - server
-
-  server:
-    container_name: php_server
-    build:
-      context: .
-    ports:
-      - 9000:9000
-
-    depends_on:
-      db:
-        condition: service_healthy
-    secrets:
-      - db-password
-
-    environment:
-      - PASSWORD_FILE_PATH=/run/secrets/db-password
-      - DB_HOST=db
-      - DB_NAME=example
-      - DB_USER=root
-    networks:
-      - fpm_net
-
   db:
     image: mariadb
     restart: always
     user: root
     secrets:
-      - db-password
+      - db_password
     volumes:
-      - db-data:/var/lib/mysql
+      - db_data:/var/lib/mysql
     environment:
-      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db_password
       - MARIADB_DATABASE=example
     expose:
       - 3306
@@ -64,10 +24,60 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  
+  frontend:
+    build:
+      context: frontend
+    volumes:
+      - frontend_dist:${FRONTEND_BUILD_DIR}
+
+  service_1:
+    container_name: service_1
+    build:
+      context: .
+      args:
+        - BACKEND_DIR=${BACKEND_DIR}
+    ports:
+      - '[::1]:9000:9000'
+
+    depends_on:
+      db:
+        condition: service_healthy
+    secrets:
+      - db_password
+
+    environment:
+      - PASSWORD_FILE_PATH=/run/secrets/db_password
+      - DB_HOST=db
+      - DB_NAME=example
+      - DB_USER=root
+    networks:
+      - fpm_net
+  proxy:
+    image: nginx:1.29-alpine-slim
+    volumes:
+      - frontend_dist:${FRONTEND_BUILD_DIR}
+      - ./nginx:/etc/nginx/templates
+    ports:
+      - 80:80
+    networks:
+      - fpm_net
+    environment:
+      - FRONTEND_BUILD_DIR
+      - BACKEND_DIR
+
+    depends_on:
+      service_1:
+        condition: service_started
+      frontend:
+        condition: service_completed_successfully
+
 volumes:
-  db-data:
+  db_data:
+  frontend_dist:
+
 secrets:
-  db-password:
+  db_password:
     file: db/password.txt
 networks:
   fpm_net:
